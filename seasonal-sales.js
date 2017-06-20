@@ -14,44 +14,9 @@ function getCategories () {
 	categoriesRequest.addEventListener("error", executeThisIfXHRFails);
 };
 
-//keep this outside so it doesn't repeat and reach in every time in the repetetive map function
-let productWrapperDiv = document.getElementById('product-wrapper');
-
-function displayProducts(productArray) {
-	let cardArray = productArray.map( function(product) {
-		return buildCard(product);
-		})
-	console.log("product card array?", cardArray);
-	cardArray.forEach( function(card){
-//create an HTML element, then inject card string into that dom element, then append that new element to the DOM with the card in it
-	let cardWrapper = document.createElement("article");
-	cardWrapper.innerHTML = card;
-	productWrapperDiv.appendChild(cardWrapper);
-	})
-}
-
-function buildDOMObj() {
-	// loop through products AND categories and make a new set of objects grabbing the prod name and dept and price and season/catID
-	//use MAP to make us an array
-	let productArr = products.map( function(currentProduct) {
-		//inside this loop we need to loop again but this time through the categories array only to find the one category object whose id matches the category-id of the currentProduct. Maybe a .filter()?
-		//that returned array will contain one object. we can set 'dept' on the new object we are making with the 'name' property of that one object.
-		let categoryItem = categories.filter (function(category) {
-			return category.id === currentProduct.category_id;
-		})
-		let prodObj = {
-			dept: categoryItem[0].name,
-			name: currentProduct.name,
-			price: currentProduct.price,
-			catId: currentProduct.category_id
-		}
-		return prodObj
-	});
-	displayProducts(productArr);
-}
-
 let products = null;
 let categories = null;
+
 function setProducts () {
 	products = JSON.parse(event.target.responseText).products;
 	getCategories();
@@ -69,23 +34,78 @@ function executeThisIfXHRFails() {
 
 
 
-// loop
+function buildDOMObj() {
+	let productArr = products.map( function(currentProduct) {
+		let categoryItem = categories.filter (function(category) {
+			return category.id === currentProduct.category_id;
+		})
+		let prodObj = {
+			dept: categoryItem[0].name,
+			name: currentProduct.name,
+			price: currentProduct.price,
+			catId: currentProduct.category_id,
+			discountedPrice: calculateDiscountPrice(currentProduct.price,categoryItem[0].discount)
+		}
+		return prodObj
+	});
+	displayProducts(productArr);
+}
+
+
+// loops because it is called in a map method
 	function buildCard (prodObj) {
 		let card = 	`
-			<div class="prodCard">
+			<div class="prodCard" data-catId=${prodObj.catId}>
 				<h2>${prodObj.name}</h2>
 				<h3>${prodObj.dept}</h3>
 				<p>$${prodObj.price}</p>
+				<p class="isHidden">$${prodObj.discountedPrice}</p>
 			</div>
 		`;
 		return card;
 	}
 //endloop
 
-// let tempObj = {name: "Furby", dept: "toys", price: 40.00}
-// console.log("card", buildCard(tempObj));
+let productWrapperDiv = document.getElementById('product-wrapper');
+
+function displayProducts(productArray) {
+	let cardArray = productArray.map( function(product) {
+		return buildCard(product);
+		})
+	console.log("product card array?", cardArray);
+	cardArray.forEach( function(card){
+//create an HTML element, then inject card string into that dom element, then append that new element to the DOM with the card in it
+	let cardWrapper = document.createElement("article");
+	cardWrapper.innerHTML = card;
+	productWrapperDiv.appendChild(cardWrapper);
+	})
+}
+
+
+function calculateDiscountPrice(origPrice, discountAmt) {
+	//if you put a plus sign in front of a number-string, it turns it into a number
+	return +(origPrice * (1.00-discountAmt)).toFixed(2);
+	//do the calc, make it 2-decimal, turn into number
+}
 
 
 
-//this happens before the load event triggers the rest of the shit
-console.log("can I see?", products);
+document.getElementById('season-selector').addEventListener("change", function() {
+	let selectedSeason = event.target.value;
+	let seasonCategory = categories.filter( function(category) {
+		return category.season_discount.toLowerCase() === selectedSeason.toLowerCase()
+	});
+	let catId = seasonCategory[0].id
+	//grab all the product cards from the DOM
+	let prodCards = document.getElementsByClassName("prodCard")
+	//can't run forEach on DOM collections
+	for (let i=0; i<prodCards.length; i++) {
+		if (parseInt(prodCards[i].getAttribute("data-catId")) === catId){
+			let pTags = prodCards[i].getElementsByTagName('p');
+			for (let i=0; i< pTags.length; i++){
+				pTags[i].classList.toggle("isHidden");
+			}
+		}
+	}
+});
+
