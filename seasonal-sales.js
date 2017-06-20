@@ -58,8 +58,8 @@ function buildDOMObj() {
 			<div class="prodCard" data-catId=${prodObj.catId}>
 				<h2>${prodObj.name}</h2>
 				<h3>${prodObj.dept}</h3>
-				<p>$${prodObj.price}</p>
-				<p class="isHidden">$${prodObj.discountedPrice}</p>
+				<p class="fullprice isHidden">$${prodObj.price}</p>
+				<p class="discounted isHidden">$${prodObj.discountedPrice}</p>
 			</div>
 		`;
 		return card;
@@ -90,7 +90,9 @@ function calculateDiscountPrice(origPrice, discountAmt) {
 
 
 
-document.getElementById('season-selector').addEventListener("change", function() {
+document.getElementById('season-selector').addEventListener("change", toggleDiscount);
+
+function toggleDiscount() {
 	let selectedSeason = event.target.value;
 	let seasonCategory = categories.filter( function(category) {
 		return category.season_discount.toLowerCase() === selectedSeason.toLowerCase()
@@ -100,12 +102,35 @@ document.getElementById('season-selector').addEventListener("change", function()
 	let prodCards = document.getElementsByClassName("prodCard")
 	//can't run forEach on DOM collections
 	for (let i=0; i<prodCards.length; i++) {
-		if (parseInt(prodCards[i].getAttribute("data-catId")) === catId){
-			let pTags = prodCards[i].getElementsByTagName('p');
-			for (let i=0; i< pTags.length; i++){
-				pTags[i].classList.toggle("isHidden");
+		console.log("product cards", prodCards);
+		if (parseInt(prodCards[i].getAttribute("data-catId")) === catId) {
+			let discItems = prodCards[i].getElementsByClassName('discounted');
+			for (let j=0; j< discItems.length; j++){
+				discItems[j].classList.remove("isHidden");
+			} 
+		} else {
+				console.log("discounted Price?", prodCards[i].discountedPrice);
+				let regItems = prodCards[i].getElementsByClassName("fullprice");
+				for (let k=0; k < regItems.length; k++) {
+					regItems[k].classList.remove("isHidden");
+				}
 			}
-		}
 	}
-});
+
+		for (let i=0; i<prodCards.length; i++) {
+		console.log("product cards", prodCards);
+		if (parseInt(prodCards[i].getAttribute("data-catId")) === catId) {
+			let discItems = prodCards[i].getElementsByClassName('fullprice');
+			for (let j=0; j< discItems.length; j++){
+				discItems[j].classList.add("isHidden");
+			} 
+		} else {
+				console.log("discounted Price?", prodCards[i].discountedPrice);
+				let regItems = prodCards[i].getElementsByClassName("discounted");
+				for (let k=0; k < regItems.length; k++) {
+					regItems[k].classList.add("isHidden");
+				}
+			}
+	}
+};
 
